@@ -10,6 +10,8 @@ const textButtonClassNames =
 const Main = () => {
   const [stud, setStud] = useState("");
   let [count, setCount] = useState(0);
+  const [group1, setGroup1] = useState([]);
+  const [group2, setGroup2] = useState([]);
   const [isPresent] = useState(false);
   const [rate, setRate] = useState(0);
   const [isChanged] = useState(false);
@@ -76,6 +78,65 @@ const Main = () => {
     setItems(updateItems);
   };
 
+  const divideToGroup = () => {
+    const studArr = [];
+    let team1 = [];
+    let team2 = [];
+
+    let team1Sum = 0;
+    let team2Sum = 0;
+
+    const updateItems = [...items];
+
+    updateItems.map((el) => {
+      if (el.isPresent) {
+        studArr.push(parseFloat(el.rate));
+      }
+    });
+
+    if (studArr.length > 0) {
+      studArr.sort().reverse();
+      for (let i = 0; i < studArr.length; i++) {
+        if ((!team1Sum && !team2Sum) || team1Sum === team2Sum) {
+          team1.push(studArr[i]);
+          team1Sum += studArr[i];
+        } else if (team1Sum < team2Sum) {
+          team1.push(studArr[i]);
+          team1Sum += studArr[i];
+        } else if (team2Sum < team1Sum) {
+          team2.push(studArr[i]);
+          team2Sum += studArr[i];
+        }
+      }
+    }
+
+    updateItems.map((el) => {
+      if (team1.length > 0) {
+        for (let i = 0; i < team1.length; i++) {
+          if (team1[i] === parseFloat(el.rate)) {
+            group1.push(el.stud);
+          }
+        }
+      }
+
+      if (team2.length > 0) {
+        for (let i = 0; i < team2.length; i++) {
+          if (team2[i] === parseFloat(el.rate)) {
+            group2.push(el.stud);
+          }
+        }
+      }
+    });
+
+    console.log(team1Sum, team2Sum);
+
+    // console.log(team1, team2);
+    // console.log(group1, group2);
+
+    setGroup1((group1) => [...group1]);
+    setGroup2((group2) => [...group2]);
+  };
+
   return (
     <div>
       <Header saveStud={saveStud} handleStud={handleStud} />
@@ -128,6 +189,37 @@ const Main = () => {
               </div>
             );
           })}
+          <div className="flex justify-end pr-5 mt-10">
+            <Button
+              handleClick={divideToGroup}
+              className="pr-5 pl-5 pt-2 pb-3 shadow-xl text-gray-500 border transition hover:bg-blue-400"
+              text="Divide To Group"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-center pb-5">
+        <div className="flex shadow-xl border-2 mt-10 pl-20 pr-20 overflow-x-auto h-96 w-3/6 text-2xl text-slate-600">
+          <div>
+            <p className="font-bold">Team 1</p>
+            {group1.map((el) => {
+              return (
+                <ul key={el} className="flex justify-center">
+                  <li>{el}</li>
+                </ul>
+              );
+            })}
+          </div>
+          <div className="ml-auto">
+            <p className="font-bold">Team 2</p>
+            {group2.map((el) => {
+              return (
+                <ul key={el} className="flex justify-center">
+                  <li>{el}</li>
+                </ul>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
