@@ -5,14 +5,14 @@ import Student from "./inputs/Student";
 const textButtonClassNames =
   "  pr-5 pl-5 pt-2 pb-3 shadow-xl text-gray-500 border transition hover:bg-blue-400";
 
-const Header = ({ handleStud, saveStud }) => {
+const Header = ({ handleStud, saveStud, stud }) => {
   return (
     <div className="flex justify-center mt-8">
-      <Student handleClick={handleStud} />
+      <Student handleClick={handleStud} stud={stud} />
       <Button
         handleClick={saveStud}
         className={textButtonClassNames}
-        text="Add Students"
+        text="Add Player"
       />
     </div>
   );

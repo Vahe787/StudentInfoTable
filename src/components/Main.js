@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import CheckBox from "./checkBox/CheckBox";
 import Header from "./Header";
 import Button from "./Button";
+import { randomIntFromInterval } from "./helper/randomIntFromInterval";
 
 const textButtonClassNames =
   "  pr-5 pl-5 pt-2 pb-3 shadow-xl text-gray-500 border transition hover:bg-blue-400";
@@ -47,14 +48,11 @@ const Main = () => {
     setStud(e.target.value);
   };
 
-  const handleIsPresent = (id) => {
-    const checkedItem = items.find((el) => el.id === id);
+  const handleIsPresent = (id, checked) => {
+    const checkedItem = items.findIndex((el) => el.id === id);
     const updateItems = [...items];
-    if (!checkedItem.isPresent) {
-      updateItems.find((el) => el.id === id).isPresent = true;
-    } else {
-      updateItems.find((el) => el.id === id).isPresent = false;
-    }
+    updateItems[checkedItem].isPresent = checked;
+
     setItems(updateItems);
   };
 
@@ -79,67 +77,95 @@ const Main = () => {
   };
 
   const divideToGroup = () => {
-    const studArr = [];
     let team1 = [];
     let team2 = [];
 
     let team1Sum = 0;
     let team2Sum = 0;
 
-    const updateItems = [...items];
+    // updateItems.map((el) => {
+    //   if (el.isPresent) {
+    //     studArr.push(parseFloat(el.rate));
+    //   }
+    // });
 
-    updateItems.map((el) => {
-      if (el.isPresent) {
-        studArr.push(parseFloat(el.rate));
-      }
-    });
+    const studArr = items.filter((el) => el.isPresent);
 
     if (studArr.length > 0) {
-      studArr.sort().reverse();
-      for (let i = 0; i < studArr.length; i++) {
+      studArr.sort((a, b) => Number(a.rate) - Number(b.rate)).reverse();
+      console.log(studArr);
+      studArr.forEach((el) => {
         if ((!team1Sum && !team2Sum) || team1Sum === team2Sum) {
-          team1.push(studArr[i]);
-          team1Sum += studArr[i];
+          team1.push({ stud: el.stud, rate: Number(el.rate) });
+          team1Sum += Number(el.rate);
         } else if (team1Sum < team2Sum) {
-          team1.push(studArr[i]);
-          team1Sum += studArr[i];
+          team1.push({ stud: el.stud, rate: Number(el.rate) });
+          team1Sum += Number(el.rate);
         } else if (team2Sum < team1Sum) {
-          team2.push(studArr[i]);
-          team2Sum += studArr[i];
+          team2.push({ stud: el.stud, rate: Number(el.rate) });
+          team2Sum += Number(el.rate);
         }
-      }
+      });
     }
 
-    updateItems.map((el) => {
-      if (team1.length > 0) {
-        for (let i = 0; i < team1.length; i++) {
-          if (team1[i] === parseFloat(el.rate)) {
-            group1.push(el.stud);
-          }
-        }
-      }
-
-      if (team2.length > 0) {
-        for (let i = 0; i < team2.length; i++) {
-          if (team2[i] === parseFloat(el.rate)) {
-            group2.push(el.stud);
-          }
-        }
-      }
-    });
-
+    setGroup1(team1);
+    setGroup2(team2);
     console.log(team1Sum, team2Sum);
+  };
+  // console.log(group1, group2);
 
-    // console.log(team1, team2);
-    // console.log(group1, group2);
+  const shuffleStud = () => {
+    let count = 0;
+    const iterationCount = group1.length * group2.length;
 
-    setGroup1((group1) => [...group1]);
-    setGroup2((group2) => [...group2]);
+    while (true) {
+      if (count > iterationCount) {
+        break;
+      }
+
+      const random1 = randomIntFromInterval(0, group1.length - 1);
+      const random2 = randomIntFromInterval(0, group2.length - 1);
+
+      const sumOfNewGroup1 = group1.reduce((acc, item, index) => {
+        if (index === random1) {
+          acc += group2[random2].rate;
+        } else {
+          acc += item.rate;
+        }
+        return acc;
+      }, 0);
+
+      const sumOfNewGroup2 = group2.reduce((acc, item, index) => {
+        if (index === random2) {
+          acc += group1[random1].rate;
+        } else {
+          acc += item.rate;
+        }
+        return acc;
+      }, 0);
+      if (
+        sumOfNewGroup1 - sumOfNewGroup2 <= 1 &&
+        sumOfNewGroup1 - sumOfNewGroup2 >= -1
+      ) {
+        console.log(sumOfNewGroup1, sumOfNewGroup2);
+        const newGroup1 = [...group1];
+        const newGroup2 = [...group2];
+
+        newGroup1[random1] = group2[random2];
+        newGroup2[random2] = group1[random1];
+
+        setGroup1(newGroup1);
+        setGroup2(newGroup2);
+        break;
+      }
+
+      count++;
+    }
   };
 
   return (
     <div>
-      <Header saveStud={saveStud} handleStud={handleStud} />
+      <Header saveStud={saveStud} handleStud={handleStud} stud={stud} />
       <div className="flex justify-center pb-5">
         <div className="shadow-xl border-2 mt-10  overflow-x-auto h-96 w-3/6">
           {items.map((el) => {
@@ -147,12 +173,10 @@ const Main = () => {
               <div key={el.id} className="flex">
                 <div className="pl-5">
                   <ol className="flex justify-start">
-                    <button
-                      className="mt-2"
-                      onClick={() => handleIsPresent(el.id)}
-                    >
-                      <CheckBox />
-                    </button>
+                    <CheckBox
+                      checked={el.isPresent}
+                      onChange={(e) => handleIsPresent(el.id, e.target.checked)}
+                    />
 
                     <li className="text-2xl text-slate-600 mt-3">{`${el.count}.`}</li>
                     <li className="text-2xl text-slate-600 ml-2 mt-3">
@@ -183,7 +207,7 @@ const Main = () => {
                   <Button
                     handleClick={() => isEvaluateStud(el.id)}
                     className={textButtonClassNames}
-                    text="Evaluate Students"
+                    text="Evaluate Player"
                   />
                 </div>
               </div>
@@ -192,33 +216,44 @@ const Main = () => {
           <div className="flex justify-end pr-5 mt-10">
             <Button
               handleClick={divideToGroup}
-              className="pr-5 pl-5 pt-2 pb-3 shadow-xl text-gray-500 border transition hover:bg-blue-400"
+              className="mb-5 pr-5 pl-5 pt-2 pb-3 shadow-xl text-gray-500 border transition hover:bg-blue-400"
               text="Divide To Group"
             />
           </div>
         </div>
       </div>
       <div className="flex justify-center pb-5">
-        <div className="flex shadow-xl border-2 mt-10 pl-20 pr-20 overflow-x-auto h-96 w-3/6 text-2xl text-slate-600">
-          <div>
-            <p className="font-bold">Team 1</p>
-            {group1.map((el) => {
-              return (
-                <ul key={el} className="flex justify-center">
-                  <li>{el}</li>
-                </ul>
-              );
-            })}
+        <div className="shadow-xl border-2 mt-10 pl-20 pr-20 overflow-x-auto h-96 w-3/6 text-2xl text-slate-600">
+          <div className="flex justify-center">
+            <div>
+              <p className="font-bold ml-2">Team 1</p>
+              {group1.map((el) => {
+                return (
+                  <ul key={el.rate} className="flex justify-center">
+                    <li>{el.stud}</li>
+                    <li className="ml-2 text-green-400">{el.rate}</li>
+                  </ul>
+                );
+              })}
+            </div>
+            <div className="ml-auto">
+              <p className="font-bold ml-2">Team 2</p>
+              {group2.map((el) => {
+                return (
+                  <ul key={el.rate} className="flex justify-center">
+                    <li>{el.stud}</li>
+                    <li className="ml-2 text-green-400">{el.rate}</li>
+                  </ul>
+                );
+              })}
+            </div>
           </div>
-          <div className="ml-auto">
-            <p className="font-bold">Team 2</p>
-            {group2.map((el) => {
-              return (
-                <ul key={el} className="flex justify-center">
-                  <li>{el}</li>
-                </ul>
-              );
-            })}
+          <div className="flex justify-end mt-10">
+            <Button
+              handleClick={shuffleStud}
+              className={textButtonClassNames}
+              text="Shuffle"
+            />
           </div>
         </div>
       </div>
