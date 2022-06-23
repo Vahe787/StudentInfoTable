@@ -4,6 +4,9 @@ import CheckBox from "./checkBox/CheckBox";
 import Header from "./Header";
 import Button from "./Button";
 import { randomIntFromInterval } from "./helper/randomIntFromInterval";
+import Delete from "./icons/Delete";
+import Evulate from "./icons/Evulate";
+import ChangeRate from "./icons/ChangeRate";
 
 const textButtonClassNames =
   "  pr-5 pl-5 pt-2 pb-3 shadow-xl text-gray-500 border transition hover:bg-blue-400";
@@ -14,8 +17,10 @@ const Main = () => {
   const [group1, setGroup1] = useState([]);
   const [group2, setGroup2] = useState([]);
   const [isPresent] = useState(false);
-  const [rate, setRate] = useState(0);
+  const [rate, setRate] = useState("");
   const [isChanged] = useState(false);
+  let [countForShuffle, setCountForShuffle] = useState(0);
+  const [groupsDifferenceValue, setGroupsDifferenceValue] = useState("");
   const [items, setItems] = useState(
     JSON.parse(localStorage.getItem("items")) || []
   );
@@ -35,7 +40,7 @@ const Main = () => {
         isPresent,
         isChanged,
       };
-      setItems((items) => [...items, newStud]);
+      setItems((prevState) => [...prevState, { ...newStud }]);
     } else {
       alert("Enter Something...");
     }
@@ -110,64 +115,70 @@ const Main = () => {
 
     setGroup1(team1);
     setGroup2(team2);
-    console.log(team1Sum, team2Sum);
   };
-  // console.log(group1, group2);
 
   const shuffleStud = () => {
-    let count = 0;
-    const iterationCount = group1.length * group2.length;
+    if (group1.length && group2.length) {
+      const iterationCount = group1.length * group2.length;
 
-    while (true) {
-      if (count > iterationCount) {
-        break;
-      }
-
-      const random1 = randomIntFromInterval(0, group1.length - 1);
-      const random2 = randomIntFromInterval(0, group2.length - 1);
-
-      const sumOfNewGroup1 = group1.reduce((acc, item, index) => {
-        if (index === random1) {
-          acc += group2[random2].rate;
-        } else {
-          acc += item.rate;
+      while (true) {
+        if (countForShuffle > iterationCount) {
+          break;
         }
-        return acc;
-      }, 0);
 
-      const sumOfNewGroup2 = group2.reduce((acc, item, index) => {
-        if (index === random2) {
-          acc += group1[random1].rate;
-        } else {
-          acc += item.rate;
+        const random1 = randomIntFromInterval(0, group1.length - 1);
+        const random2 = randomIntFromInterval(0, group2.length - 1);
+
+        const sumOfNewGroup1 = group1.reduce((acc, item, index) => {
+          if (index === random1) {
+            acc += group2[random2].rate;
+          } else {
+            acc += item.rate;
+          }
+          return acc;
+        }, 0);
+
+        const sumOfNewGroup2 = group2.reduce((acc, item, index) => {
+          if (index === random2) {
+            acc += group1[random1].rate;
+          } else {
+            acc += item.rate;
+          }
+          return acc;
+        }, 0);
+
+        if (
+          sumOfNewGroup1 - sumOfNewGroup2 <= groupsDifferenceValue &&
+          sumOfNewGroup1 - sumOfNewGroup2 >= -groupsDifferenceValue
+        ) {
+          console.log(sumOfNewGroup1, sumOfNewGroup2);
+          const newGroup1 = [...group1];
+          const newGroup2 = [...group2];
+
+          newGroup1[random1] = group2[random2];
+          newGroup2[random2] = group1[random1];
+
+          setGroup1(newGroup1);
+          setGroup2(newGroup2);
+
+          break;
         }
-        return acc;
-      }, 0);
-      if (
-        sumOfNewGroup1 - sumOfNewGroup2 <= 1 &&
-        sumOfNewGroup1 - sumOfNewGroup2 >= -1
-      ) {
-        console.log(sumOfNewGroup1, sumOfNewGroup2);
-        const newGroup1 = [...group1];
-        const newGroup2 = [...group2];
-
-        newGroup1[random1] = group2[random2];
-        newGroup2[random2] = group1[random1];
-
-        setGroup1(newGroup1);
-        setGroup2(newGroup2);
-        break;
       }
-
-      count++;
+      countForShuffle++;
     }
+
+    setCountForShuffle(countForShuffle);
+  };
+
+  const deleteStud = (id) => {
+    setItems(items.filter((item) => item.id !== id));
   };
 
   return (
     <div>
       <Header saveStud={saveStud} handleStud={handleStud} stud={stud} />
       <div className="flex justify-center pb-5">
-        <div className="shadow-xl border-2 mt-10  overflow-x-auto h-96 w-3/6">
+        <div className="shadow-xl border-2 mt-10  overflow-x-auto h-96 w-2/5">
           {items.map((el) => {
             return (
               <div key={el.id} className="flex">
@@ -178,11 +189,11 @@ const Main = () => {
                       onChange={(e) => handleIsPresent(el.id, e.target.checked)}
                     />
 
-                    <li className="text-2xl text-slate-600 mt-3">{`${el.count}.`}</li>
+                    <li className="text-2xl text-slate- mt-3">{`${el.count}.`}</li>
                     <li className="text-2xl text-slate-600 ml-2 mt-3">
                       {el.stud}
                     </li>
-                    <p className="text-2xl text-slate-600 mt-3 ml-5">
+                    <p className="text-2xl text-slate-600 ml-5 mt-3">
                       {el.rate}
                     </p>
                     <div
@@ -192,22 +203,28 @@ const Main = () => {
                       }}
                     >
                       <input
+                        value={rate}
                         className="shadow-xl w-20 ml-5 mt-3 text-gray-500 text-center border outline-none placeholder-gray-300"
                         onChange={(e) => setRate(e.target.value)}
                       />
                       <Button
                         handleClick={() => evaluateStud(el.id)}
-                        className="p-1 ml-2 shadow-xl text-gray-500 border transition hover:bg-blue-400"
-                        text="Rate"
+                        className="ml-3 font-bold transition hover:text-green-400 transition hover:scale-150"
+                        icon={<ChangeRate />}
                       />
                     </div>
                   </ol>
                 </div>
-                <div className="ml-auto pr-5 mt-2">
+                <div className="ml-auto pr-5 mt-4">
                   <Button
                     handleClick={() => isEvaluateStud(el.id)}
-                    className={textButtonClassNames}
-                    text="Evaluate Player"
+                    className="mr-2 font-bold transition hover:text-green-400 transition hover:scale-125"
+                    icon={<Evulate />}
+                  />
+                  <Button
+                    handleClick={() => deleteStud(el.id)}
+                    className="font-bold transition hover:text-red-600 transition hover:scale-125"
+                    icon={<Delete />}
                   />
                 </div>
               </div>
@@ -223,7 +240,7 @@ const Main = () => {
         </div>
       </div>
       <div className="flex justify-center pb-5">
-        <div className="shadow-xl border-2 mt-10 pl-20 pr-20 overflow-x-auto h-96 w-3/6 text-2xl text-slate-600">
+        <div className="shadow-xl border-2  mt-10 pl-20 pr-20 overflow-x-auto h-96 w-2/5 text-2xl text-slate-600">
           <div className="flex justify-center">
             <div>
               <p className="font-bold ml-2">Team 1</p>
@@ -237,6 +254,16 @@ const Main = () => {
               })}
             </div>
             <div className="ml-auto">
+              <input
+                value={groupsDifferenceValue}
+                onChange={(e) =>
+                  setGroupsDifferenceValue(Number(e.target.value))
+                }
+                className="w-20 shadow-xl text-gray-500 text-center border outline-none placeholder-gray-300"
+                placeholder="Value..."
+              />
+            </div>
+            <div className="ml-auto">
               <p className="font-bold ml-2">Team 2</p>
               {group2.map((el) => {
                 return (
@@ -248,13 +275,23 @@ const Main = () => {
               })}
             </div>
           </div>
-          <div className="flex justify-end mt-10">
-            <Button
-              handleClick={shuffleStud}
-              className={textButtonClassNames}
-              text="Shuffle"
-            />
-          </div>
+          {group1.length > group2.length || group1.length < group2.length ? (
+            <div className="flex justify-end mt-10 invisible">
+              <Button
+                handleClick={shuffleStud}
+                className={textButtonClassNames}
+                text="Shuffle"
+              />
+            </div>
+          ) : (
+            <div className="flex justify-end mt-10 visible">
+              <Button
+                handleClick={shuffleStud}
+                className={textButtonClassNames}
+                text="Shuffle"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

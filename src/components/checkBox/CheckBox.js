@@ -11,7 +11,7 @@ const CheckBox = ({ checked, onChange }) => {
         onChange={onChange}
         {...label}
         sx={{
-          "& .MuiSvgIcon-root": { fontSize: 28 },
+          "& .MuiSvgIcon-root": { fontSize: 28, mt: 0.8 },
         }}
       />
     </div>
